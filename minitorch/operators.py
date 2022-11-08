@@ -157,9 +157,6 @@ def map(fn):
     return ret
   return _map
 
-      
-  
-
 
 def negList(ls):
   return map(neg)(ls)
