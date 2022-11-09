@@ -22,8 +22,15 @@ def central_difference(f, *vals, arg=0, epsilon=1e-6):
   Returns:
     float : An approximation of :math:`f'_i(x_0, \ldots, x_{n-1})`
   """
-  # TODO: Implement for Task 1.1.
-  raise NotImplementedError('Need to implement for Task 1.1')
+  # Change vals[arg] by eps
+  def _diff(vals, arg, epsilon):
+    return (i+epsilon if idx == arg else i for idx, i in enumerate(vals))
+
+  # Central difference
+  # delta_h_f(x) = f(x+h/2) - f(x-h/2)
+  # f'(x) = delta_h_f(x)/h
+  return (f(*_diff(vals, arg, epsilon/2)) - f(*_diff(vals, arg, -epsilon/2)))/epsilon
+
 
 
 # ## Task 1.2 and 1.4
@@ -33,7 +40,7 @@ def central_difference(f, *vals, arg=0, epsilon=1e-6):
 class Scalar(Variable):
   """
   A reimplementation of scalar values for autodifferentiation
-  tracking.  Scalar Variables behave as close as possible to standard
+  tracking. Scalar Variables behave as close as possible to standard
   Python numbers while also tracking the operations that led to the
   number's creation. They can only be manipulated by
   :class:`ScalarFunction`.
