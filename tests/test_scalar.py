@@ -30,21 +30,33 @@ def test_central_diff():
 # ## Task 1.2 - Test each of the different function types
 
 
+@pytest.mark.task1_2
 @given(small_floats, small_floats)
 def test_simple(a, b):
+  # Negate
+  c = -Scalar(a) 
+  assert_close(c.data, -a)
+
   # Simple add
   c = Scalar(a) + Scalar(b)
   assert_close(c.data, a + b)
+
+  # Simple sub
+  c = Scalar(a) - Scalar(b)
+  assert_close(c.data, a - b)
 
   # Simple mul
   c = Scalar(a) * Scalar(b)
   assert_close(c.data, a * b)
 
+  # Simple lt, gt and eq
+  assert_close((Scalar(a) > Scalar(b)).data, float(a > b))
+  assert_close((Scalar(a) < Scalar(b)).data, float(a < b))
+  assert_close((Scalar(a) == Scalar(b)).data, float(a == b))
+
   # Simple relu
   c = Scalar(a).relu() + Scalar(b).relu()
   assert_close(c.data, minitorch.operators.relu(a) + minitorch.operators.relu(b))
-
-  # Add others if you would like...
 
 
 one_arg, two_arg, _ = MathTestVariable._tests()
