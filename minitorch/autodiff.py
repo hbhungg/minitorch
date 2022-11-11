@@ -273,8 +273,14 @@ class FunctionBase:
     """
     # Tip: Note when implementing this function that
     # cls.backward may return either a value or a tuple.
-    # TODO: Implement for Task 1.3.
-    raise NotImplementedError('Need to implement for Task 1.3')
+    # Bruh is this a glorify constant remover?
+    deriv = cls.backward(ctx, d_output)
+    ret = []
+    for i, d in zip(inputs, deriv):
+      if not is_constant(i):
+        ret.append((i, d))
+    return ret
+
 
 
 # Algorithms for backpropagation
