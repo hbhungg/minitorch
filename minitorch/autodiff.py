@@ -34,6 +34,9 @@ class Variable:
       self.name = self.unique_id
     self.used = 0
 
+  def __hash__(self):
+    return hash(self.unique_id)
+
   def requires_grad_(self, val):
     """
     Set the requires_grad flag to `val` on variable.
@@ -44,7 +47,10 @@ class Variable:
     Args:
       val (bool): whether to require grad
     """
-    self.history = History()
+    if val:
+      self.history = History()
+    else:
+      self.history = None
 
   def backward(self, d_output=None):
     """
@@ -64,7 +70,9 @@ class Variable:
 
   def is_leaf(self):
     "True if this variable created by the user (no `last_fn`)"
-    return self.history.last_fn is None
+    # NOTES: There is a weird bug in task1_4 test_one_derivative that make leaf scalar not have history. Is this intentional?
+    # Anyway, quick fix.
+    return self.history is None or self.history.last_fn is None
 
   def accumulate_derivative(self, val):
     """
@@ -190,8 +198,7 @@ class History:
     Returns:
       list of numbers : a derivative with respect to `inputs`
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    return self.last_fn.chain_rule(ctx=self.ctx, inputs=self.inputs, d_output=d_output)
 
 
 class FunctionBase:
@@ -271,16 +278,9 @@ class FunctionBase:
       (see `is_constant` to remove unneeded variables)
 
     """
-    # Tip: Note when implementing this function that
-    # cls.backward may return either a value or a tuple.
-    # Bruh is this a glorify constant remover?
-    deriv = cls.backward(ctx, d_output)
-    ret = []
-    for i, d in zip(inputs, deriv):
-      if not is_constant(i):
-        ret.append((i, d))
-    return ret
-
+    # Since backward can return a single value or a tuple, we turn single value into tuple.
+    deriv = wrap_tuple(cls.backward(ctx, d_output))
+    return [(i, d) for i, d in zip(inputs, deriv) if is_constant(i) is False]
 
 
 # Algorithms for backpropagation
@@ -301,8 +301,20 @@ def topological_sort(variable):
     list of Variables : Non-constant Variables in topological order
               starting from the right.
   """
-  # TODO: Implement for Task 1.4.
-  raise NotImplementedError('Need to implement for Task 1.4')
+  def _topological_sort(variable, visited, stack):
+    visited.add(variable)
+    if not variable.is_leaf():
+      for i in variable.history.inputs:
+        if isinstance(i, Variable):
+          if i not in visited:
+            _topological_sort(i, visited, stack)
+    stack.append(variable)
+
+  stack = []
+  visited = set()
+  _topological_sort(variable, visited, stack)
+  return reversed(stack)
+
 
 
 def backpropagate(variable, deriv):
@@ -318,5 +330,14 @@ def backpropagate(variable, deriv):
 
   No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
   """
-  # TODO: Implement for Task 1.4.
-  raise NotImplementedError('Need to implement for Task 1.4')
+  topo_sorted = list(topological_sort(variable))
+  track_deriv = dict.fromkeys(topo_sorted, 0)
+  track_deriv[variable] = deriv
+
+  for v in topo_sorted:
+    if not v.is_leaf():
+      tt = v.history.backprop_step(track_deriv[v])
+      for tv, tvv in tt:
+        track_deriv[tv] += tvv
+    else:
+      v.accumulate_derivative(track_deriv[v])

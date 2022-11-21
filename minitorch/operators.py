@@ -86,9 +86,7 @@ def relu(x: float) -> float:
   Returns:
     float : relu value
   """
-  if x > 0:
-    return x
-  return 0.0
+  return max(x, 0.0)
 
 
 EPS = 1e-6
@@ -123,7 +121,7 @@ def relu_back(x, d):
   r"If :math:`f = relu` compute :math:`d \times f'(x)`"
   if x > 0:
     return d
-  return 0
+  return 0.0
 
 
 # ## Task 0.3

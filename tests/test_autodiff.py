@@ -1,6 +1,7 @@
 import minitorch
 import pytest
 from minitorch import History
+from .strategies import assert_close
 
 # ## Task 1.3 - Tests for the autodifferentiation machinery.
 
@@ -97,6 +98,28 @@ def test_chain_rule4():
 
 # Main tests are in test_scalar.py
 
+@pytest.mark.task1_4
+def test_backprop_1t():
+  var1 = minitorch.Scalar(10)
+  var2 = minitorch.Scalar(20)
+  var3 = var1 + var2
+  var4 = var3 + 10
+  var4.backward(d_output=1)
+  assert var1.derivative == 1
+  assert var2.derivative == 1
+
+@pytest.mark.task1_4
+def test_backprop_2t():
+  # Example from backpropagate doc
+  # h(x, y) = log(z) + exp(z)
+  # where z = x * y
+  var1 = minitorch.Scalar(2)
+  var2 = minitorch.Scalar(3)
+  var3 = var1 * var2
+  var4 = var3.log() + var3.exp()
+  var4.backward(d_output=1)
+  assert_close(var1.derivative, 1210.786)
+  assert_close(var2.derivative, 807.1909)
 
 @pytest.mark.task1_4
 def test_backprop1():
