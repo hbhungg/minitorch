@@ -70,9 +70,7 @@ class Variable:
 
   def is_leaf(self):
     "True if this variable created by the user (no `last_fn`)"
-    # NOTES: There is a weird bug in task1_4 test_one_derivative that make leaf scalar not have history. Is this intentional?
-    # Anyway, quick fix.
-    return self.history is None or self.history.last_fn is None
+    return self.history.last_fn is None
 
   def accumulate_derivative(self, val):
     """
@@ -305,7 +303,7 @@ def topological_sort(variable):
     visited.add(variable)
     if not variable.is_leaf():
       for i in variable.history.inputs:
-        if isinstance(i, Variable):
+        if isinstance(i, Variable) and not is_constant(i):
           if i not in visited:
             _topological_sort(i, visited, stack)
     stack.append(variable)
