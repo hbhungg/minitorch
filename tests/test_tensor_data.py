@@ -117,6 +117,31 @@ def test_shape_broadcast():
   assert c == (2, 5)
 
 
+@pytest.mark.task2_2
+def test_broadcast_index():
+  import numpy as np
+
+  out = np.array([0, 0])
+  
+  # TODO: This whole thing could be automated by hypothesis?
+  # Broadcast in s1
+  big_shape1 = (1, 5, 5)
+  small_shape1 = (1, 5)
+  # Broadcast in s2
+  big_shape2 = (1, 5, 5)
+  small_shape2 = (5, 1)
+
+  for s1 in range(5):
+    for s2 in range(5):
+      # Broadcast in s1
+      minitorch.broadcast_index((0, s1, s2), big_shape1, small_shape1, out)
+      assert np.array_equal(out, np.array([0, s2]))
+
+      # Broadcast in s2
+      minitorch.broadcast_index((0, s1, s2), big_shape2, small_shape2, out)
+      assert np.array_equal(out, np.array([s1, 0]))
+
+
 @given(tensor_data())
 def test_string(tensor_data):
   tensor_data.to_string()

@@ -2,6 +2,7 @@ import random
 from .operators import prod
 from numpy import array, float64, ndarray
 import numba
+import itertools
 
 MAX_DIMS = 32
 
@@ -65,8 +66,13 @@ def broadcast_index(big_index, big_shape, shape, out_index):
   Returns:
     None : Fills in `out_index`.
   """
-  # TODO: Implement for Task 2.2.
-  raise NotImplementedError('Need to implement for Task 2.2')
+  # Basically, it map the index of the bigger tensor to the smaller tensor when broadcasting
+  # We assume that both tensor or broadcastable (will be checked by the `shape_broadcast`)
+  for i, s in enumerate(shape):
+    if s > 1:
+      out_index[i] = big_index[i + (len(big_shape) - len(shape))]
+    else:
+      out_index[i] = 0
 
 
 def shape_broadcast(shape1, shape2):
@@ -83,8 +89,16 @@ def shape_broadcast(shape1, shape2):
   Raises:
     IndexingError : if cannot broadcast
   """
-  # TODO: Implement for Task 2.2.
-  raise NotImplementedError('Need to implement for Task 2.2')
+  new_shape = []
+  for s1, s2 in itertools.zip_longest(reversed(shape1), reversed(shape2), fillvalue=0):
+    # https://pytorch.org/docs/stable/notes/broadcasting.html
+    # The dimension sizes must either be equal, one of them is 1, or one of them does not exist.
+    if s1 == s2 or s1 <= 1 or s2 <= 1: 
+      new_shape.append(max(s1, s2))
+    else:
+      raise IndexingError(f"Cannot be broadcast with shapes {shape1} {shape2}")
+  return tuple(reversed(new_shape))
+
 
 
 def strides_from_shape(shape):
