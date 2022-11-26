@@ -1,3 +1,4 @@
+from itertools import product
 import numpy as np
 from .tensor_data import (
   to_index,
@@ -38,10 +39,13 @@ def tensor_map(fn):
     None : Fills in `out`
   """
 
+  # TODO: this version does not broadcast, do we need to implement for it?
+  # Both tensor have direct index mapping and in_shape == out_shape
+  # Different strides will be dealt with by `index_to_position`
   def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
-
+    for idx in product(*(range(i) for i in in_shape)):
+      in_val = in_storage[index_to_position(idx, in_strides)]
+      out[index_to_position(idx, out_strides)] = fn(in_val)
   return _map
 
 
@@ -120,19 +124,14 @@ def tensor_zip(fn):
   """
 
   def _zip(
-    out,
-    out_shape,
-    out_strides,
-    a_storage,
-    a_shape,
-    a_strides,
-    b_storage,
-    b_shape,
-    b_strides,
-  ):
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
-
+    out, out_shape, out_strides,
+    a_storage, a_shape, a_strides,
+    b_storage, b_shape, b_strides):
+    # Same as map
+    for idx in product(*(range(i) for i in out_shape)):
+      a_val = a_storage[index_to_position(idx, a_strides)]
+      b_val = b_storage[index_to_position(idx, b_strides)]
+      out[index_to_position(idx, out_strides)] = fn(a_val, b_val)
   return _zip
 
 
@@ -183,7 +182,7 @@ def tensor_reduce(fn):
   """
   Low-level implementation of tensor reduce.
 
-  * `out_shape` will be the same as `a_shape`
+  * `out_shape` will be the same as `in_shape`
      except with `reduce_dim` turned to size `1`
 
   Args:
@@ -191,19 +190,30 @@ def tensor_reduce(fn):
     out (array): storage for `out` tensor
     out_shape (array): shape for `out` tensor
     out_strides (array): strides for `out` tensor
-    a_storage (array): storage for `a` tensor
-    a_shape (array): shape for `a` tensor
-    a_strides (array): strides for `a` tensor
+    in_storage (array): storage for `a` tensor
+    in_shape (array): shape for `a` tensor
+    in_strides (array): strides for `a` tensor
     reduce_dim (int): dimension to reduce out
 
   Returns:
     None : Fills in `out`
   """
 
-  def _reduce(out, out_shape, out_strides, a_storage, a_shape, a_strides, reduce_dim):
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+  def _reduce(out, out_shape, out_strides, in_storage, in_shape, in_strides, reduce_dim):
+    # For each of the idxs, loop through all of the reduced dim idx to "collapse" that dim
+    for idx in product(*(range(i) for i in np.delete(in_shape, reduce_dim))):
+      last = None
+      for reduce_idx in range(in_shape[reduce_dim]):
+        full_idx = idx[:reduce_dim] + (reduce_idx,) + idx[reduce_dim:]
+        val = in_storage[index_to_position(full_idx, in_strides)]
+        if last is None:
+          last = val
+        else:
+          last = fn(last, val)
 
+      # Idx of the out tensor (reduced)
+      out_idx = idx[:reduce_dim] + (0,) + idx[reduce_dim:]
+      out[index_to_position(out_idx, out_strides)] = last
   return _reduce
 
 
