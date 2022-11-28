@@ -39,13 +39,12 @@ def tensor_map(fn):
     None : Fills in `out`
   """
 
-  # TODO: this version does not broadcast, do we need to implement for it?
-  # Both tensor have direct index mapping and in_shape == out_shape
-  # Different strides will be dealt with by `index_to_position`
   def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
+    out_bidx = np.array(out_shape)
     for idx in product(*(range(i) for i in in_shape)):
       in_val = in_storage[index_to_position(idx, in_strides)]
-      out[index_to_position(idx, out_strides)] = fn(in_val)
+      broadcast_index(idx, in_shape, out_shape, out_bidx)
+      out[index_to_position(out_bidx, out_strides)] = fn(in_val)
   return _map
 
 
@@ -128,9 +127,13 @@ def tensor_zip(fn):
     a_storage, a_shape, a_strides,
     b_storage, b_shape, b_strides):
     # Same as map
+    a_bidx = np.array(a_shape)
+    b_bidx = np.array(b_shape)
     for idx in product(*(range(i) for i in out_shape)):
-      a_val = a_storage[index_to_position(idx, a_strides)]
-      b_val = b_storage[index_to_position(idx, b_strides)]
+      broadcast_index(idx, out_shape, a_shape, a_bidx)
+      broadcast_index(idx, out_shape, b_shape, b_bidx)
+      a_val = a_storage[index_to_position(a_bidx, a_strides)]
+      b_val = b_storage[index_to_position(b_bidx, b_strides)]
       out[index_to_position(idx, out_strides)] = fn(a_val, b_val)
   return _zip
 
