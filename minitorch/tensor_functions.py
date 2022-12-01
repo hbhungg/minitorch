@@ -9,6 +9,7 @@ import numpy as np
 from . import operators
 from .tensor import Tensor
 import random
+from .scalar import central_difference
 
 
 # Constructors
@@ -102,8 +103,8 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a, b = ctx.saved_values
+        return b*grad_output, a*grad_output
 
     class Sigmoid(Function):
       @staticmethod
@@ -113,8 +114,8 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a = ctx.saved_values
+        return central_difference(sigmoid_map, a, arg=0)
 
     class ReLU(Function):
       @staticmethod
@@ -124,8 +125,8 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a = ctx.saved_values
+        return relu_back_zip(a, grad_output)
 
     class Log(Function):
       @staticmethod
@@ -135,19 +136,20 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a = ctx.saved_values
+        return log_back_zip(a, grad_output)
 
     class Exp(Function):
       @staticmethod
       def forward(ctx, a):
-        ctx.save_for_backward(a)
-        return exp_map(a)
+        retval = exp_map(a)
+        ctx.save_for_backward(a, retval)
+        return retval
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a, retval = ctx.saved_values
+        return grad_output * retval
 
     class Sum(Function):
       @staticmethod
@@ -183,22 +185,24 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
     class LT(Function):
       @staticmethod
       def forward(ctx, a, b):
+        ctx.save_for_backward(a.shape, b.shape)
         return lt_zip(a, b)
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a_shape, b_shape = ctx.saved_values
+        return zeros(a_shape), zeros(b_shape) 
 
     class EQ(Function):
       @staticmethod
       def forward(ctx, a, b):
+        ctx.save_for_backward(a.shape, b.shape)
         return eq_zip(a, b)
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a_shape, b_shape = ctx.saved_values
+        return zeros(a_shape), zeros(b_shape)
 
     class IsClose(Function):
       @staticmethod
@@ -208,12 +212,15 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
     class Permute(Function):
       @staticmethod
       def forward(ctx, a, order):
-        return a.permute(*order)
+        ctx.save_for_backward(a.shape)
+        return Tensor(a._tensor.permute(*order), backend=a.backend)
 
       @staticmethod
       def backward(ctx, grad_output):
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        original = ctx.saved_values
+        return Tensor.make(
+          grad_output._tensor._storage, original, backend=grad_output.backend
+        )
 
     class View(Function):
       @staticmethod
@@ -276,7 +283,7 @@ def zeros(shape, backend=TensorFunctions):
   Returns:
     :class:`Tensor` : new tensor
   """
-  return Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
+  return Tensor.make([0.0] * int(operators.prod(shape)), shape, backend=backend)
 
 
 def rand(shape, backend=TensorFunctions, requires_grad=False):
