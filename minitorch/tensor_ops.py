@@ -40,11 +40,11 @@ def tensor_map(fn):
   """
 
   def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
-    out_bidx = np.array(out_shape)
-    for idx in product(*(range(i) for i in in_shape)):
-      in_val = in_storage[index_to_position(idx, in_strides)]
-      broadcast_index(idx, in_shape, out_shape, out_bidx)
-      out[index_to_position(out_bidx, out_strides)] = fn(in_val)
+    in_bidx = np.array(in_shape)
+    for idx in product(*(range(i) for i in out_shape)):
+      broadcast_index(idx, out_shape, in_shape, in_bidx)
+      in_val = in_storage[index_to_position(in_bidx, in_strides)]
+      out[index_to_position(idx, out_strides)] = fn(in_val)
   return _map
 
 
