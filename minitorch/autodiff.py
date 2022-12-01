@@ -278,7 +278,8 @@ class FunctionBase:
     """
     # Since backward can return a single value or a tuple, we turn single value into tuple.
     deriv = wrap_tuple(cls.backward(ctx, d_output))
-    return [(i, d) for i, d in zip(inputs, deriv) if is_constant(i) is False]
+    # Expand for backprop on broadcasted values (ensure that the derivative is the same shape as the variable).
+    return [(i, i.expand(d)) for i, d in zip(inputs, deriv) if is_constant(i) is False]
 
 
 # Algorithms for backpropagation
@@ -335,7 +336,7 @@ def backpropagate(variable, deriv):
   for v in topo_sorted:
     if not v.is_leaf():
       tt = v.history.backprop_step(track_deriv[v])
-      for tv, tvv in tt:
-        track_deriv[tv] += tvv
+      for var, deriv in tt:
+        track_deriv[var] += deriv
     else:
       v.accumulate_derivative(track_deriv[v])

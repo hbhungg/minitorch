@@ -28,6 +28,9 @@ class Tensor(Variable):
     self._tensor = v
     self.backend = backend
 
+  # Make tensor hashable for dict
+  __hash__ = Variable.__hash__
+
   def to_numpy(self):
     """
     Returns:
